@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TechCrush v24</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { bg: '#020617', card: '#0f172a' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: white; padding: 16px; min-height: 100vh; }
+        .input-box { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; font-size: 14px; }
+        .input-box:focus { border-color: #a855f7; background: #0f172a; outline: none; }
+        .paste-zone { background: #0f172a; border: 1px dashed #475569; color: #94a3b8; font-size: 12px; font-family: monospace; padding: 10px; width: 100%; resize: none; border-radius: 8px; }
+        
+        .btn-main { background: linear-gradient(to right, #4f46e5, #7c3aed); color: white; font-weight: bold; font-size: 14px; border-radius: 10px; padding: 14px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+        .btn-tg { background: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; text-decoration: none; }
+        
+        .btn-pay { background: linear-gradient(to right, #16a34a, #15803d); color: white; font-weight: bold; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
+        .btn-disabled { background: #334155; color: #94a3b8; cursor: not-allowed; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; font-weight: bold; }
+        
+        /* UPDATED CHIPS */
+        .chip { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; font-size: 11px; padding: 8px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+        .chip:hover { border-color: #fbbf24; color: white; }
+        .chip.active { background: #fbbf24; color: black; font-weight: bold; border-color: #fbbf24; }
+
+        .hidden { display: none !important; }
+        
+        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #0f172a; padding: 5px; border-radius: 12px; }
+        .tab-btn { flex: 1; text-align: center; padding: 10px; font-size: 12px; font-weight: bold; color: #64748b; border-radius: 8px; transition: all 0.2s; }
+        .tab-btn.active { background: #1e293b; color: white; border: 1px solid #334155; }
+
+        #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .pin-input { background: transparent; border: none; border-bottom: 2px solid #475569; color: white; font-size: 24px; letter-spacing: 10px; text-align: center; width: 150px; outline: none; }
+    </style>
+</head>
+<body class="max-w-md mx-auto" onmousemove="resetIdle()" onclick="resetIdle()" onkeypress="resetIdle()">
+
+    <div id="lockScreen">
+        <div class="mb-6 text-center">
+            <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4"><span class="text-2xl">🔒</span></div>
+            <h2 class="text-xl font-bold text-white">TechCrush Admin</h2>
+            <p class="text-xs text-gray-500 mt-1">System Locked</p>
+        </div>
+        <input type="password" id="pinEntry" class="pin-input" maxlength="4" placeholder="••••" oninput="checkPin()">
+    </div>
+
+    <div id="appContent" class="hidden">
+        
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-fuchsia-500">v24</span></h1>
+            <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-400 font-mono" id="timeDisplay">--:--</div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('dispatch')">🚀 Dispatcher</button>
+            <button class="tab-btn" onclick="switchTab('verify')">💰 Verify & Pay</button>
+        </div>
+
+        <div id="dispatchTab">
+            <div class="bg-red-900/20 border border-red-800/50 p-3 rounded-xl mb-4 flex justify-between items-center">
+                <div><span class="text-[10px] text-red-400 font-bold uppercase block">Current Match Code</span></div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="securityCode" class="bg-red-900/40 text-red-300 font-mono text-xl font-bold w-16 text-center rounded border border-red-700/50 p-1" readonly>
+                    <button onclick="generateNewSecurityCode()" class="text-xs bg-slate-800 p-2 rounded">🔄</button>
+                </div>
+            </div>
+
+            <div class="bg-card p-4 rounded-xl border border-slate-800 mb-4 shadow-lg">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-[10px] text-blue-400 font-bold uppercase">Room Data</label>
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearDispatchInput()" class="text-[10px] text-red-400 underline mr-2">Clear</button>
+                        <input type="checkbox" id="manualMode" onchange="toggleMode()" class="w-4 h-4 accent-fuchsia-500 rounded"><label class="text-[10px] text-gray-400 uppercase font-bold">Manual</label>
+                    </div>
+                </div>
+                <div id="autoSection"><textarea id="ludoRaw" rows="2" placeholder='Paste Ludo Text...' class="paste-zone" oninput="extractGameInfo()"></textarea></div>
+                <div id="manualSection" class="hidden grid grid-cols-2 gap-3"><input type="text" id="manualID" placeholder="ID" class="input-box text-center" oninput="syncManual()"><input type="text" id="manualLink" placeholder="Link" class="input-box" oninput="syncManual()"></div>
+            </div>
+
+            <div class="bg-card p-4 rounded-xl border border-slate-800 mb-6">
+                <div class="flex justify-between mb-3"><label class="text-[10px] text-green-400 font-bold uppercase">Players</label><button onclick="extractUsernames()" class="text-[10px] bg-slate-700 px-2 py-1 rounded">Filter</button></div>
+                <textarea id="playerRaw" rows="2" placeholder='Paste Names...' class="paste-zone mb-4"></textarea>
+                <div class="space-y-3">
+                    <input type="text" id="p1" placeholder="Player 1" class="input-box" /><input type="text" id="p2" placeholder="Player 2" class="input-box" /><input type="text" id="p3" placeholder="Player 3" class="input-box" /><input type="text" id="p4" placeholder="Player 4" class="input-box" /><input type="text" id="p5" placeholder="Player 5" class="input-box" />
+                </div>
+            </div>
+            <button onclick="goToDispatch()" class="btn-main mb-8">LAUNCH MATCH (Auto-Clear)</button>
+        </div>
+
+        <div id="verifyTab" class="hidden">
+            <div class="bg-card p-4 rounded-xl border border-slate-800 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase">3-Step Verification</h3>
+                    <button onclick="resetVerify()" class="text-[10px] text-red-400 underline">Reset Form</button>
+                </div>
+                
+                <textarea id="claimRaw" rows="2" placeholder="Paste full message here to auto-fill..." class="paste-zone mb-4" oninput="autoFillVerify()"></textarea>
+                
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div><label class="text-[9px] text-gray-500 uppercase block mb-1">1. Room ID</label><input type="text" id="v_roomID" class="input-box text-center font-bold text-yellow-400"></div>
+                    <div><label class="text-[9px] text-gray-500 uppercase block mb-1">2. Secret Code</label><input type="text" id="v_code" placeholder="Ex: A-5" class="input-box text-center font-bold text-red-400 uppercase"></div>
+                </div>
+                
+                <div class="mb-4"><label class="text-[9px] text-gray-500 uppercase block mb-1">3. Winner UPI ID</label><input type="text" id="v_upi" class="input-box"></div>
+                
+                <button onclick="verifyAndCheck()" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-3 rounded mb-4 font-bold border border-slate-600">🔍 VERIFY MATCH DATA</button>
+
+                <div id="verifyResult" class="hidden border-t border-slate-700 pt-4">
+                    <div id="statusBox" class="p-3 rounded-lg text-center mb-4 bg-slate-800 border border-slate-700">
+                        <span id="matchStatusText" class="text-sm font-bold text-gray-400">Checking...</span>
+                    </div>
+
+                    <div id="paymentSection" class="hidden">
+                        
+                        <div class="flex gap-2 justify-center mb-4">
+                            <span onclick="setPrize(300)" class="chip active">₹300</span>
+                            <span onclick="setPrize(600)" class="chip">₹600</span>
+                            <span onclick="setPrize(1500)" class="chip">₹1500</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mb-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                            <span class="text-xs text-gray-400 font-bold ml-1">Prize (₹):</span>
+                            <input type="number" id="prizeAmount" value="300" class="bg-transparent text-white font-bold w-24 text-right outline-none text-lg" oninput="manualPrizeUpdate()">
+                        </div>
+
+                        <a id="payLink" href="#" target="_blank" class="btn-pay">💸 PAY NOW</a>
+                        <p class="text-[9px] text-center text-gray-500 mt-2">Clicking Pay marks match as 'PAID' ✅</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-card rounded-xl border border-slate-800 p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase">Match History</h3>
+                    <div class="flex gap-2">
+                        <button onclick="backupData()" class="text-[10px] bg-blue-900 text-blue-300 px-2 py-1 rounded">Backup</button>
+                        <button onclick="restoreData()" class="text-[10px] bg-yellow-900 text-yellow-300 px-2 py-1 rounded">Restore</button>
+                        <button onclick="clearHistory()" class="text-[10px] text-red-500 px-2">Clear</button>
+                    </div>
+                </div>
+                <div class="flex justify-between px-2 text-[9px] text-gray-500 uppercase mb-2 border-b border-slate-800 pb-1">
+                    <span class="w-12">Time</span>
+                    <span class="w-20">ID</span>
+                    <span class="w-10 text-center">Code</span>
+                    <span class="w-10 text-right">Status</span>
+                </div>
+                <div id="historyList" class="history-container overflow-y-auto max-h-60"></div>
+            </div>
+        </div>
+
+        <div id="dispatchView" class="hidden fixed inset-0 bg-black z-50 p-6 pt-20 overflow-y-auto">
+            <h2 class="text-center text-xl font-bold text-white mb-2">Sending Info</h2>
+            <div class="text-center mb-6"><span class="text-lg font-bold text-red-400 font-mono" id="securityCodeDisplay">--</span></div>
+            <div id="buttonsContainer"></div>
+            <button onclick="closeDispatch()" class="w-full mt-8 text-sm text-gray-500 underline py-4">← Close & New Match</button>
+        </div>
+    </div>
+
+    <input type="hidden" id="finalCode"><input type="hidden" id="finalLink">
+
+    <script>
+        const ENCODED_PIN = "MjAyNQ=="; 
+        let idleTime = 0;
+
+        // --- AUTH & SECURITY ---
+        function checkPin() { 
+            const input = document.getElementById('pinEntry').value;
+            if(input === atob(ENCODED_PIN)){
+                document.getElementById('lockScreen').style.display='none';
+                document.getElementById('appContent').classList.remove('hidden');
+                document.getElementById('pinEntry').value = ""; 
+                initApp();
+            }
+        }
+        
+        setInterval(function() {
+            idleTime++;
+            if (idleTime > 5) { 
+                document.getElementById('appContent').classList.add('hidden');
+                document.getElementById('lockScreen').style.display = 'flex';
+            }
+        }, 60000); 
+
+        function resetIdle() { idleTime = 0; }
+        function initApp() { generateNewSecurityCode(); setInterval(updateClock, 1000); updateClock(); loadHistory(); }
+        function updateClock() { document.getElementById('timeDisplay').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+        
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('dispatchTab').classList.add('hidden'); document.getElementById('verifyTab').classList.add('hidden');
+            if(tab === 'dispatch') { document.getElementById('dispatchTab').classList.remove('hidden'); event.target.classList.add('active'); } 
+            else { document.getElementById('verifyTab').classList.remove('hidden'); event.target.classList.add('active'); loadHistory(); }
+        }
+
+        // --- DISPATCHER ---
+        function generateNewSecurityCode() { const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; document.getElementById('securityCode').value=c.charAt(Math.floor(Math.random()*c.length))+"-"+c.charAt(Math.floor(Math.random()*c.length)); }
+        function toggleMode() { const man=document.getElementById('manualMode').checked; document.getElementById('autoSection').classList.toggle('hidden', man); document.getElementById('manualSection').classList.toggle('hidden', !man); }
+        function clearDispatchInput() { document.getElementById('ludoRaw').value=""; document.getElementById('manualID').value=""; document.getElementById('manualLink').value=""; document.getElementById('finalCode').value=""; document.getElementById('finalLink').value=""; }
+        function extractGameInfo() {
+            const t=document.getElementById('ludoRaw').value; const c=t.match(/Room Code:\s*(\d+)/); const l=t.match(/(https:\/\/lk\.gggred\.com[^\s]+)/);
+            if(c){document.getElementById('finalCode').value=c[1];document.getElementById('manualID').value=c[1];}
+            if(l){document.getElementById('finalLink').value=l[1];document.getElementById('manualLink').value=l[1];}else{document.getElementById('finalLink').value="https://www.techcrush.in";}
+        }
+        function syncManual() { document.getElementById('finalCode').value=document.getElementById('manualID').value; document.getElementById('finalLink').value=document.getElementById('manualLink').value; }
+        function extractUsernames() { const m=document.getElementById('playerRaw').value.match(/@[\w\d_]+/g); for(let i=1;i<=5;i++)document.getElementById('p'+i).value=""; if(m)m.forEach((u,i)=>{if(i<5)document.getElementById('p'+(i+1)).value=u;}); document.getElementById('playerRaw').value=""; }
+        
+        function goToDispatch() {
+            const code=document.getElementById('finalCode').value; const sec=document.getElementById('securityCode').value; const players=[1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
+            if(!code||players.length===0){alert("Missing Data");return;}
+            saveToHistory(code, sec); document.getElementById('securityCodeDisplay').innerText=sec;
+            const link=document.getElementById('finalLink').value||"https://www.techcrush.in";
+            const msg=encodeURIComponent(`🎮 *MATCH STARTED!* \n\n🔑 ID: *${code}* \n🔗 Link: ${link} \n\n🛑 *VERIFY:* Win hone par Ludo Chat me *${sec}* type karein, fir screenshot lein.`);
+            const con=document.getElementById('buttonsContainer'); con.innerHTML="";
+            players.forEach((u,i)=>{
+                const a=document.createElement('a'); a.className="btn-tg";
+                a.innerHTML=`<div class="flex items-center gap-3"><span class="text-xs text-gray-500">P${i+1}</span><div class="flex flex-col"><span class="text-sm font-bold">@${u.replace('@','')}</span><span class="text-[10px] text-gray-400">Code: ${sec}</span></div></div><span class="text-xs bg-indigo-600 px-3 py-1 rounded">SEND ➜</span>`;
+                a.href=`https://t.me/${u.replace('@','')}?text=${msg}`; a.target="_blank";
+                a.onclick=function(){this.className+=" done";this.querySelector('span:last-child').innerText="✅";};
+                con.appendChild(a);
+            });
+            document.getElementById('dispatchView').classList.remove('hidden');
+            clearDispatchInput(); document.getElementById('playerRaw').value = ""; for(let i=1; i<=5; i++) document.getElementById('p'+i).value = "";
+        }
+        function closeDispatch() { document.getElementById('dispatchView').classList.add('hidden'); generateNewSecurityCode(); loadHistory(); }
+
+        // --- VERIFY & PAY ---
+        function autoFillVerify() {
+            const t = document.getElementById('claimRaw').value;
+            const idMatch = t.match(/(\d{6,8})/); const codeMatch = t.match(/([A-Z]-[0-9A-Z])/i); const upiMatch = t.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
+            if(idMatch) document.getElementById('v_roomID').value = idMatch[0];
+            if(codeMatch) document.getElementById('v_code').value = codeMatch[0].toUpperCase();
+            if(upiMatch) document.getElementById('v_upi').value = upiMatch[0];
+        }
+
+        // --- PRIZE LOGIC ---
+        function setPrize(amount) {
+            document.getElementById('prizeAmount').value = amount;
+            updatePayLink();
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function manualPrizeUpdate() {
+            updatePayLink();
+            // Remove active style from chips if typing manually
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        }
+
+        function verifyAndCheck() {
+            const inputID = document.getElementById('v_roomID').value.trim();
+            const inputCode = document.getElementById('v_code').value.trim().toUpperCase();
+            const inputUPI = document.getElementById('v_upi').value.trim();
+            const statusBox = document.getElementById('statusBox'); const statusText = document.getElementById('matchStatusText'); const paySection = document.getElementById('paymentSection');
+            
+            document.getElementById('verifyResult').classList.remove('hidden');
+            if(!inputID || !inputCode) { statusBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/50 border border-red-500"; statusText.innerText = "⚠️ MISSING ID OR CODE"; statusText.className = "text-sm font-bold text-red-300"; paySection.classList.add('hidden'); return; }
+
+            const h = JSON.parse(localStorage.getItem('tc_history_v2')||"[]"); const match = h.find(x => x.id === inputID);
+
+            if(match) {
+                if(match.code === inputCode) {
+                    statusBox.className = "p-3 rounded-lg text-center mb-4 bg-green-900/50 border border-green-500";
+                    if(match.paid) { statusText.innerHTML = `✅ ALREADY PAID<br><span class="text-xs text-green-300">Paid Marked in History.</span>`; statusText.className = "text-sm font-bold text-green-300"; } 
+                    else { statusText.innerHTML = `✅ MATCH VERIFIED<br><span class="text-xs text-green-300 font-normal">ID & Code Match!</span>`; statusText.className = "text-sm font-bold text-green-400"; }
+                    if(inputUPI) { paySection.classList.remove('hidden'); updatePayLink(); } else { statusText.innerHTML += `<br><span class="text-xs text-yellow-300">Enter UPI to Pay</span>`; }
+                } else {
+                    statusBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/50 border border-red-500"; statusText.innerHTML = `❌ INVALID CODE<br><span class="text-xs text-red-300">System: ${match.code} | User: ${inputCode}</span>`; statusText.className = "text-sm font-bold text-red-400"; paySection.classList.add('hidden');
+                }
+            } else {
+                statusBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/50 border border-red-500"; statusText.innerText = "❌ ID NOT FOUND"; statusText.className = "text-sm font-bold text-red-400"; paySection.classList.add('hidden');
+            }
+        }
+
+        function resetVerify() { document.getElementById('claimRaw').value = ""; document.getElementById('v_roomID').value = ""; document.getElementById('v_code').value = ""; document.getElementById('v_upi').value = ""; document.getElementById('verifyResult').classList.add('hidden'); }
+
+        function updatePayLink() {
+            const u = document.getElementById('v_upi').value; const a = document.getElementById('prizeAmount').value; const id = document.getElementById('v_roomID').value; const payLink = document.getElementById('payLink');
+            if(u && a) {
+                payLink.href = `upi://pay?pa=${u}&pn=Winner&am=${a}&cu=INR`; payLink.classList.remove('btn-disabled'); payLink.classList.add('btn-pay'); payLink.style.pointerEvents = "auto";
+                payLink.onclick = function() { markMatchAsPaid(id); };
+            } else { payLink.classList.remove('btn-pay'); payLink.classList.add('btn-disabled'); payLink.style.pointerEvents = "none"; }
+        }
+
+        function markMatchAsPaid(roomID) {
+            let h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); const index = h.findIndex(m => m.id === roomID);
+            if(index !== -1) { h[index].paid = true; localStorage.setItem('tc_history_v2', JSON.stringify(h)); loadHistory(); const btn = document.getElementById('payLink'); btn.innerHTML = "✅ PAID"; btn.className = "btn-disabled bg-green-900 text-green-200 border border-green-500"; }
+        }
+
+        // --- HISTORY ---
+        function saveToHistory(id, code) { let h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); h.unshift({ id: id, code: code, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), paid: false }); if(h.length > 500) h.pop(); localStorage.setItem('tc_history_v2', JSON.stringify(h)); }
+        function loadHistory() {
+            const h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); const l = document.getElementById('historyList');
+            if(h.length === 0) { l.innerHTML = '<p class="text-xs text-gray-600 text-center">Empty</p>'; return; }
+            let html = ''; 
+            h.forEach(m => { const statusIcon = m.paid ? '<span class="text-green-400 font-bold">✅</span>' : '<span class="text-gray-600">🕒</span>'; html += `<div class="flex justify-between items-center py-2 border-b border-slate-800 text-xs"><span class="text-gray-500 w-12">${m.time}</span><span class="text-yellow-500 font-mono w-20">${m.id}</span><span class="text-red-400 font-bold w-10 text-center">${m.code}</span><span class="w-10 text-right">${statusIcon}</span></div>`; }); l.innerHTML = html;
+        }
+        function clearHistory(){ if(confirm('Clear all?')) localStorage.removeItem('tc_history_v2'); loadHistory(); }
+        function backupData() { const data = localStorage.getItem('tc_history_v2') || "[]"; if(data === "[]") { alert("No history to backup."); return; } navigator.clipboard.writeText(data).then(() => { alert("✅ Data copied!"); }); }
+        function restoreData() { const input = prompt("Paste your Backup Data here:"); if(input) { try { JSON.parse(input); localStorage.setItem('tc_history_v2', input); alert("✅ Restored!"); loadHistory(); } catch(e) { alert("❌ Invalid Code."); } } }
+    </script>
+</body>
+</html>
