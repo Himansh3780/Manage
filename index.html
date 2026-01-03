@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TechCrush v24</title>
+    <title>TechCrush v26 (Ledger)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script>
@@ -22,13 +23,13 @@
         .input-box:focus { border-color: #a855f7; background: #0f172a; outline: none; }
         .paste-zone { background: #0f172a; border: 1px dashed #475569; color: #94a3b8; font-size: 12px; font-family: monospace; padding: 10px; width: 100%; resize: none; border-radius: 8px; }
         
-        .btn-main { background: linear-gradient(to right, #4f46e5, #7c3aed); color: white; font-weight: bold; font-size: 14px; border-radius: 10px; padding: 14px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+        .btn-main { background: linear-gradient(to right, #4f46e5, #7c3aed); color: white; font-weight: bold; font-size: 14px; border-radius: 10px; padding: 14px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); transition: transform 0.1s; }
+        .btn-main:active { transform: scale(0.98); }
         .btn-tg { background: #1e293b; border: 1px solid #334155; padding: 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; text-decoration: none; }
         
-        .btn-pay { background: linear-gradient(to right, #16a34a, #15803d); color: white; font-weight: bold; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
-        .btn-disabled { background: #334155; color: #94a3b8; cursor: not-allowed; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; font-weight: bold; }
+        .btn-pay { background: linear-gradient(to right, #16a34a, #15803d); color: white; font-weight: bold; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); pointer-events: auto; }
+        .btn-disabled { background: #334155; color: #94a3b8; cursor: not-allowed; padding: 12px; border-radius: 10px; width: 100%; text-align: center; display: block; margin-top: 10px; font-weight: bold; pointer-events: none; }
         
-        /* UPDATED CHIPS */
         .chip { background: #1e293b; border: 1px solid #334155; color: #cbd5e1; font-size: 11px; padding: 8px 14px; border-radius: 20px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
         .chip:hover { border-color: #fbbf24; color: white; }
         .chip.active { background: #fbbf24; color: black; font-weight: bold; border-color: #fbbf24; }
@@ -41,6 +42,7 @@
 
         #lockScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #020617; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .pin-input { background: transparent; border: none; border-bottom: 2px solid #475569; color: white; font-size: 24px; letter-spacing: 10px; text-align: center; width: 150px; outline: none; }
+        #errorLog { display: none; color: red; font-size: 10px; margin-top: 10px; }
     </style>
 </head>
 <body class="max-w-md mx-auto" onmousemove="resetIdle()" onclick="resetIdle()" onkeypress="resetIdle()">
@@ -52,18 +54,19 @@
             <p class="text-xs text-gray-500 mt-1">System Locked</p>
         </div>
         <input type="password" id="pinEntry" class="pin-input" maxlength="4" placeholder="••••" oninput="checkPin()">
+        <p id="errorLog">Invalid PIN</p>
     </div>
 
     <div id="appContent" class="hidden">
         
         <div class="flex justify-between items-center mb-4">
-            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-fuchsia-500">v24</span></h1>
+            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-fuchsia-500">v26</span></h1>
             <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-400 font-mono" id="timeDisplay">--:--</div>
         </div>
 
         <div class="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('dispatch')">🚀 Dispatcher</button>
-            <button class="tab-btn" onclick="switchTab('verify')">💰 Verify & Pay</button>
+            <button class="tab-btn active" onclick="switchTab('dispatch', event)">🚀 Dispatcher</button>
+            <button class="tab-btn" onclick="switchTab('verify', event)">💰 Verify & Pay</button>
         </div>
 
         <div id="dispatchTab">
@@ -123,9 +126,9 @@
                     <div id="paymentSection" class="hidden">
                         
                         <div class="flex gap-2 justify-center mb-4">
-                            <span onclick="setPrize(300)" class="chip active">₹300</span>
-                            <span onclick="setPrize(600)" class="chip">₹600</span>
-                            <span onclick="setPrize(1500)" class="chip">₹1500</span>
+                            <span onclick="setPrize(300, event)" class="chip active">₹300</span>
+                            <span onclick="setPrize(600, event)" class="chip">₹600</span>
+                            <span onclick="setPrize(1500, event)" class="chip">₹1500</span>
                         </div>
                         
                         <div class="flex justify-between items-center mb-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
@@ -141,7 +144,10 @@
 
             <div class="bg-card rounded-xl border border-slate-800 p-4">
                 <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase">Match History</h3>
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-400 uppercase">History</h3>
+                        <span id="totalPaidDisplay" class="text-[10px] text-green-400 font-mono">Total Paid: ₹0</span>
+                    </div>
                     <div class="flex gap-2">
                         <button onclick="backupData()" class="text-[10px] bg-blue-900 text-blue-300 px-2 py-1 rounded">Backup</button>
                         <button onclick="restoreData()" class="text-[10px] bg-yellow-900 text-yellow-300 px-2 py-1 rounded">Restore</button>
@@ -149,10 +155,11 @@
                     </div>
                 </div>
                 <div class="flex justify-between px-2 text-[9px] text-gray-500 uppercase mb-2 border-b border-slate-800 pb-1">
-                    <span class="w-12">Time</span>
-                    <span class="w-20">ID</span>
-                    <span class="w-10 text-center">Code</span>
-                    <span class="w-10 text-right">Status</span>
+                    <span class="w-10">Time</span>
+                    <span class="w-16">ID</span>
+                    <span class="w-12 text-center text-green-600">Amt</span>
+                    <span class="w-8 text-center">Code</span>
+                    <span class="w-8 text-right">Sts</span>
                 </div>
                 <div id="historyList" class="history-container overflow-y-auto max-h-60"></div>
             </div>
@@ -169,10 +176,21 @@
     <input type="hidden" id="finalCode"><input type="hidden" id="finalLink">
 
     <script>
+        function safeGetHistory() {
+            try {
+                const data = localStorage.getItem('tc_history_v2');
+                if (!data) return [];
+                return JSON.parse(data);
+            } catch (e) {
+                console.error("History Corrupt", e);
+                localStorage.setItem('tc_history_v2', "[]");
+                return [];
+            }
+        }
+
         const ENCODED_PIN = "MjAyNQ=="; 
         let idleTime = 0;
 
-        // --- AUTH & SECURITY ---
         function checkPin() { 
             const input = document.getElementById('pinEntry').value;
             if(input === atob(ENCODED_PIN)){
@@ -180,6 +198,9 @@
                 document.getElementById('appContent').classList.remove('hidden');
                 document.getElementById('pinEntry').value = ""; 
                 initApp();
+            } else if (input.length >= 4) {
+                 document.getElementById('pinEntry').value = "";
+                 document.getElementById('errorLog').style.display = 'block';
             }
         }
         
@@ -195,31 +216,55 @@
         function initApp() { generateNewSecurityCode(); setInterval(updateClock, 1000); updateClock(); loadHistory(); }
         function updateClock() { document.getElementById('timeDisplay').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
         
-        function switchTab(tab) {
+        function switchTab(tab, event) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('dispatchTab').classList.add('hidden'); document.getElementById('verifyTab').classList.add('hidden');
-            if(tab === 'dispatch') { document.getElementById('dispatchTab').classList.remove('hidden'); event.target.classList.add('active'); } 
-            else { document.getElementById('verifyTab').classList.remove('hidden'); event.target.classList.add('active'); loadHistory(); }
+            if(tab === 'dispatch') { document.getElementById('dispatchTab').classList.remove('hidden'); if(event) event.target.classList.add('active'); } 
+            else { document.getElementById('verifyTab').classList.remove('hidden'); if(event) event.target.classList.add('active'); loadHistory(); }
         }
 
         // --- DISPATCHER ---
         function generateNewSecurityCode() { const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; document.getElementById('securityCode').value=c.charAt(Math.floor(Math.random()*c.length))+"-"+c.charAt(Math.floor(Math.random()*c.length)); }
         function toggleMode() { const man=document.getElementById('manualMode').checked; document.getElementById('autoSection').classList.toggle('hidden', man); document.getElementById('manualSection').classList.toggle('hidden', !man); }
         function clearDispatchInput() { document.getElementById('ludoRaw').value=""; document.getElementById('manualID').value=""; document.getElementById('manualLink').value=""; document.getElementById('finalCode').value=""; document.getElementById('finalLink').value=""; }
+        
         function extractGameInfo() {
-            const t=document.getElementById('ludoRaw').value; const c=t.match(/Room Code:\s*(\d+)/); const l=t.match(/(https:\/\/lk\.gggred\.com[^\s]+)/);
-            if(c){document.getElementById('finalCode').value=c[1];document.getElementById('manualID').value=c[1];}
-            if(l){document.getElementById('finalLink').value=l[1];document.getElementById('manualLink').value=l[1];}else{document.getElementById('finalLink').value="https://www.techcrush.in";}
+            try {
+                const t=document.getElementById('ludoRaw').value; 
+                if(!t) return;
+                const c=t.match(/Room Code:\s*(\d+)/); 
+                const l=t.match(/(https:\/\/lk\.gggred\.com[^\s]+)/);
+                if(c && c[1]){document.getElementById('finalCode').value=c[1];document.getElementById('manualID').value=c[1];}
+                if(l && l[1]){document.getElementById('finalLink').value=l[1];document.getElementById('manualLink').value=l[1];}else{document.getElementById('finalLink').value="https://www.techcrush.in";}
+            } catch(e) { console.log("Extraction Error"); }
         }
+        
         function syncManual() { document.getElementById('finalCode').value=document.getElementById('manualID').value; document.getElementById('finalLink').value=document.getElementById('manualLink').value; }
-        function extractUsernames() { const m=document.getElementById('playerRaw').value.match(/@[\w\d_]+/g); for(let i=1;i<=5;i++)document.getElementById('p'+i).value=""; if(m)m.forEach((u,i)=>{if(i<5)document.getElementById('p'+(i+1)).value=u;}); document.getElementById('playerRaw').value=""; }
+        
+        function extractUsernames() { 
+            try {
+                const raw = document.getElementById('playerRaw').value;
+                if(!raw) return;
+                const m=raw.match(/@[\w\d_]+/g); 
+                for(let i=1;i<=5;i++)document.getElementById('p'+i).value=""; 
+                if(m)m.forEach((u,i)=>{if(i<5)document.getElementById('p'+(i+1)).value=u;}); 
+                document.getElementById('playerRaw').value=""; 
+            } catch(e) { console.log("Username Error"); }
+        }
         
         function goToDispatch() {
-            const code=document.getElementById('finalCode').value; const sec=document.getElementById('securityCode').value; const players=[1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
+            const code=document.getElementById('finalCode').value; const sec=document.getElementById('securityCode').value; 
+            const players=[1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
+            
             if(!code||players.length===0){alert("Missing Data");return;}
-            saveToHistory(code, sec); document.getElementById('securityCodeDisplay').innerText=sec;
+            
+            // Save initial (Unpaid)
+            saveToHistory(code, sec, 0); 
+            document.getElementById('securityCodeDisplay').innerText=sec;
+            
             const link=document.getElementById('finalLink').value||"https://www.techcrush.in";
             const msg=encodeURIComponent(`🎮 *MATCH STARTED!* \n\n🔑 ID: *${code}* \n🔗 Link: ${link} \n\n🛑 *VERIFY:* Win hone par Ludo Chat me *${sec}* type karein, fir screenshot lein.`);
+            
             const con=document.getElementById('buttonsContainer'); con.innerHTML="";
             players.forEach((u,i)=>{
                 const a=document.createElement('a'); a.className="btn-tg";
@@ -235,24 +280,25 @@
 
         // --- VERIFY & PAY ---
         function autoFillVerify() {
-            const t = document.getElementById('claimRaw').value;
-            const idMatch = t.match(/(\d{6,8})/); const codeMatch = t.match(/([A-Z]-[0-9A-Z])/i); const upiMatch = t.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
-            if(idMatch) document.getElementById('v_roomID').value = idMatch[0];
-            if(codeMatch) document.getElementById('v_code').value = codeMatch[0].toUpperCase();
-            if(upiMatch) document.getElementById('v_upi').value = upiMatch[0];
+            try {
+                const t = document.getElementById('claimRaw').value;
+                if(!t) return;
+                const idMatch = t.match(/(\d{6,8})/); const codeMatch = t.match(/([A-Z]-[0-9A-Z])/i); const upiMatch = t.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
+                if(idMatch) document.getElementById('v_roomID').value = idMatch[0];
+                if(codeMatch) document.getElementById('v_code').value = codeMatch[0].toUpperCase();
+                if(upiMatch) document.getElementById('v_upi').value = upiMatch[0];
+            } catch(e) { console.log("Autofill Error"); }
         }
 
-        // --- PRIZE LOGIC ---
-        function setPrize(amount) {
+        function setPrize(amount, event) {
             document.getElementById('prizeAmount').value = amount;
             updatePayLink();
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            event.target.classList.add('active');
+            if(event) event.target.classList.add('active');
         }
 
         function manualPrizeUpdate() {
             updatePayLink();
-            // Remove active style from chips if typing manually
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
         }
 
@@ -265,13 +311,18 @@
             document.getElementById('verifyResult').classList.remove('hidden');
             if(!inputID || !inputCode) { statusBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/50 border border-red-500"; statusText.innerText = "⚠️ MISSING ID OR CODE"; statusText.className = "text-sm font-bold text-red-300"; paySection.classList.add('hidden'); return; }
 
-            const h = JSON.parse(localStorage.getItem('tc_history_v2')||"[]"); const match = h.find(x => x.id === inputID);
+            const h = safeGetHistory(); 
+            const match = h.find(x => x.id === inputID);
 
             if(match) {
                 if(match.code === inputCode) {
                     statusBox.className = "p-3 rounded-lg text-center mb-4 bg-green-900/50 border border-green-500";
-                    if(match.paid) { statusText.innerHTML = `✅ ALREADY PAID<br><span class="text-xs text-green-300">Paid Marked in History.</span>`; statusText.className = "text-sm font-bold text-green-300"; } 
-                    else { statusText.innerHTML = `✅ MATCH VERIFIED<br><span class="text-xs text-green-300 font-normal">ID & Code Match!</span>`; statusText.className = "text-sm font-bold text-green-400"; }
+                    if(match.paid) { 
+                        statusText.innerHTML = `✅ ALREADY PAID<br><span class="text-xs text-green-300">Amount: ₹${match.amount}</span>`; 
+                        statusText.className = "text-sm font-bold text-green-300"; 
+                    } 
+                    else { statusText.innerHTML = `✅ MATCH VERIFIED<br><span class="text-xs text-green-300 font-normal">Ready to Pay</span>`; statusText.className = "text-sm font-bold text-green-400"; }
+                    
                     if(inputUPI) { paySection.classList.remove('hidden'); updatePayLink(); } else { statusText.innerHTML += `<br><span class="text-xs text-yellow-300">Enter UPI to Pay</span>`; }
                 } else {
                     statusBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/50 border border-red-500"; statusText.innerHTML = `❌ INVALID CODE<br><span class="text-xs text-red-300">System: ${match.code} | User: ${inputCode}</span>`; statusText.className = "text-sm font-bold text-red-400"; paySection.classList.add('hidden');
@@ -287,23 +338,67 @@
             const u = document.getElementById('v_upi').value; const a = document.getElementById('prizeAmount').value; const id = document.getElementById('v_roomID').value; const payLink = document.getElementById('payLink');
             if(u && a) {
                 payLink.href = `upi://pay?pa=${u}&pn=Winner&am=${a}&cu=INR`; payLink.classList.remove('btn-disabled'); payLink.classList.add('btn-pay'); payLink.style.pointerEvents = "auto";
-                payLink.onclick = function() { markMatchAsPaid(id); };
+                payLink.onclick = function() { markMatchAsPaid(id, a); };
             } else { payLink.classList.remove('btn-pay'); payLink.classList.add('btn-disabled'); payLink.style.pointerEvents = "none"; }
         }
 
-        function markMatchAsPaid(roomID) {
-            let h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); const index = h.findIndex(m => m.id === roomID);
-            if(index !== -1) { h[index].paid = true; localStorage.setItem('tc_history_v2', JSON.stringify(h)); loadHistory(); const btn = document.getElementById('payLink'); btn.innerHTML = "✅ PAID"; btn.className = "btn-disabled bg-green-900 text-green-200 border border-green-500"; }
+        // --- MARK PAID (UPDATED TO SAVE AMOUNT) ---
+        function markMatchAsPaid(roomID, amount) {
+            let h = safeGetHistory(); 
+            const index = h.findIndex(m => m.id === roomID);
+            if(index !== -1) { 
+                h[index].paid = true; 
+                h[index].amount = parseInt(amount) || 0; // Save Amount
+                localStorage.setItem('tc_history_v2', JSON.stringify(h)); 
+                loadHistory(); 
+                const btn = document.getElementById('payLink'); 
+                btn.innerHTML = "✅ PAID ₹" + amount; 
+                btn.className = "btn-disabled bg-green-900 text-green-200 border border-green-500"; 
+            }
         }
 
-        // --- HISTORY ---
-        function saveToHistory(id, code) { let h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); h.unshift({ id: id, code: code, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), paid: false }); if(h.length > 500) h.pop(); localStorage.setItem('tc_history_v2', JSON.stringify(h)); }
-        function loadHistory() {
-            const h = JSON.parse(localStorage.getItem('tc_history_v2') || "[]"); const l = document.getElementById('historyList');
-            if(h.length === 0) { l.innerHTML = '<p class="text-xs text-gray-600 text-center">Empty</p>'; return; }
-            let html = ''; 
-            h.forEach(m => { const statusIcon = m.paid ? '<span class="text-green-400 font-bold">✅</span>' : '<span class="text-gray-600">🕒</span>'; html += `<div class="flex justify-between items-center py-2 border-b border-slate-800 text-xs"><span class="text-gray-500 w-12">${m.time}</span><span class="text-yellow-500 font-mono w-20">${m.id}</span><span class="text-red-400 font-bold w-10 text-center">${m.code}</span><span class="w-10 text-right">${statusIcon}</span></div>`; }); l.innerHTML = html;
+        // --- HISTORY (UPDATED WITH AMOUNT) ---
+        function saveToHistory(id, code, amt) { 
+            let h = safeGetHistory(); 
+            h.unshift({ 
+                id: id, 
+                code: code, 
+                time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}), 
+                paid: false,
+                amount: amt || 0 
+            }); 
+            if(h.length > 500) h.pop(); 
+            localStorage.setItem('tc_history_v2', JSON.stringify(h)); 
         }
+
+        function loadHistory() {
+            const h = safeGetHistory(); 
+            const l = document.getElementById('historyList');
+            
+            // Calculate Total
+            let total = 0;
+            h.forEach(m => { if(m.paid) total += parseInt(m.amount || 0); });
+            document.getElementById('totalPaidDisplay').innerText = "Total Paid: ₹" + total;
+
+            if(h.length === 0) { l.innerHTML = '<p class="text-xs text-gray-600 text-center">Empty</p>'; return; }
+            
+            let html = ''; 
+            h.forEach(m => { 
+                const statusIcon = m.paid ? '<span class="text-green-400 font-bold">✅</span>' : '<span class="text-gray-600">🕒</span>'; 
+                const amtDisplay = m.paid ? `<span class="text-green-400 font-mono">₹${m.amount}</span>` : `<span class="text-gray-600">-</span>`;
+                
+                html += `
+                    <div class="flex justify-between items-center py-2 border-b border-slate-800 text-xs">
+                        <span class="text-gray-500 w-10">${m.time}</span>
+                        <span class="text-yellow-500 font-mono w-16">${m.id}</span>
+                        <span class="w-12 text-center">${amtDisplay}</span>
+                        <span class="text-red-400 font-bold w-8 text-center">${m.code}</span>
+                        <span class="w-8 text-right">${statusIcon}</span>
+                    </div>`; 
+            }); 
+            l.innerHTML = html;
+        }
+        
         function clearHistory(){ if(confirm('Clear all?')) localStorage.removeItem('tc_history_v2'); loadHistory(); }
         function backupData() { const data = localStorage.getItem('tc_history_v2') || "[]"; if(data === "[]") { alert("No history to backup."); return; } navigator.clipboard.writeText(data).then(() => { alert("✅ Data copied!"); }); }
         function restoreData() { const input = prompt("Paste your Backup Data here:"); if(input) { try { JSON.parse(input); localStorage.setItem('tc_history_v2', input); alert("✅ Restored!"); loadHistory(); } catch(e) { alert("❌ Invalid Code."); } } }
