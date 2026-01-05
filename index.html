@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TechCrush v26 (WhatsApp Edition)</title>
+    <title>TechCrush v27 (Backup + Edit)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script>
@@ -20,7 +19,7 @@
     <style>
         body { background-color: #020617; color: white; padding: 16px; min-height: 100vh; }
         .input-box { background: #1e293b; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; width: 100%; font-size: 14px; }
-        .input-box:focus { border-color: #22c55e; background: #0f172a; outline: none; } /* Green focus for WA */
+        .input-box:focus { border-color: #22c55e; background: #0f172a; outline: none; }
         .paste-zone { background: #0f172a; border: 1px dashed #475569; color: #94a3b8; font-size: 12px; font-family: monospace; padding: 10px; width: 100%; resize: none; border-radius: 8px; }
 
         .btn-main { background: linear-gradient(to right, #15803d, #22c55e); color: white; font-weight: bold; font-size: 14px; border-radius: 10px; padding: 14px; width: 100%; text-align: center; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); transition: transform 0.1s; }
@@ -61,7 +60,7 @@
     <div id="appContent" class="hidden">
 
         <div class="flex justify-between items-center mb-4">
-            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-green-500">WA-v26</span></h1>
+            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-green-500">WA-v27</span></h1>
             <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-400 font-mono" id="timeDisplay">--:--</div>
         </div>
 
@@ -102,7 +101,7 @@
                     <input type="tel" id="p5" placeholder="Phone 5" class="input-box" />
                 </div>
             </div>
-            <button onclick="goToDispatch()" class="btn-main mb-8">LAUNCH ON WHATSAPP</button>
+            <button onclick="preparePreview()" class="btn-main mb-8">LAUNCH ON WHATSAPP</button>
         </div>
 
         <div id="verifyTab" class="hidden">
@@ -146,12 +145,33 @@
             <div class="bg-card rounded-xl border border-slate-800 p-4">
                 <div class="flex justify-between items-center mb-3">
                     <div><h3 class="text-xs font-bold text-gray-400 uppercase">History</h3><span id="totalPaidDisplay" class="text-[10px] text-green-400 font-mono">Total Paid: ₹0</span></div>
-                    <div class="flex gap-2"><button onclick="clearHistory()" class="text-[10px] text-red-500 px-2">Clear</button></div>
+                    <div class="flex gap-2">
+                        <button onclick="downloadBackup()" class="text-[10px] text-blue-400 border border-blue-900 px-2 py-1 rounded hover:bg-blue-900/30">⬇ Backup</button>
+                        <button onclick="toggleRestore()" class="text-[10px] text-yellow-400 border border-yellow-900 px-2 py-1 rounded hover:bg-yellow-900/30">⬆ Restore</button>
+                        <button onclick="clearHistory()" class="text-[10px] text-red-500 border border-red-900 px-2 py-1 rounded hover:bg-red-900/30">Clear</button>
+                    </div>
                 </div>
+
+                <div id="restoreArea" class="hidden mb-2">
+                    <textarea id="restoreInput" rows="2" class="paste-zone mb-1" placeholder="Paste your backup JSON here..."></textarea>
+                    <button onclick="processRestore()" class="w-full bg-yellow-700/50 text-xs py-1 rounded text-yellow-200">Confirm Restore</button>
+                </div>
+
                 <div class="flex justify-between px-2 text-[9px] text-gray-500 uppercase mb-2 border-b border-slate-800 pb-1">
                     <span class="w-10">Time</span><span class="w-16">ID</span><span class="w-12 text-center text-green-600">Amt</span><span class="w-8 text-center">Code</span><span class="w-8 text-right">Sts</span>
                 </div>
                 <div id="historyList" class="history-container overflow-y-auto max-h-60"></div>
+            </div>
+        </div>
+
+        <div id="previewModal" class="hidden fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4">
+            <div class="bg-card border border-slate-700 w-full max-w-sm rounded-xl p-4 shadow-2xl">
+                <h3 class="text-sm font-bold text-white mb-2">✏️ Edit SMS Message</h3>
+                <textarea id="previewText" rows="8" class="w-full bg-slate-900 border border-slate-600 rounded p-3 text-sm text-gray-200 focus:border-green-500 focus:outline-none mb-4"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="closePreview()" class="flex-1 bg-slate-800 text-gray-400 text-xs py-3 rounded">Cancel</button>
+                    <button onclick="confirmAndSend()" class="flex-1 bg-green-600 text-white font-bold text-xs py-3 rounded">CONFIRM & SEND</button>
+                </div>
             </div>
         </div>
 
@@ -215,12 +235,10 @@
         }
         function syncManual() { document.getElementById('finalCode').value=document.getElementById('manualID').value; document.getElementById('finalLink').value=document.getElementById('manualLink').value; }
 
-        // --- PHONE NUMBER EXTRACTION ---
         function extractPhoneNumbers() { 
             try {
                 const raw = document.getElementById('playerRaw').value;
                 if(!raw) return;
-                // Finds 10 digit numbers
                 const m = raw.match(/\d{10}/g); 
                 for(let i=1;i<=5;i++) document.getElementById('p'+i).value=""; 
                 if(m) m.forEach((u,i)=>{ if(i<5) document.getElementById('p'+(i+1)).value=u; }); 
@@ -228,31 +246,52 @@
             } catch(e) { console.log("Phone Error"); }
         }
 
-        function goToDispatch() {
+        // NEW: PREVIEW FUNCTION
+        function preparePreview() {
             const code = document.getElementById('finalCode').value; 
             const sec = document.getElementById('securityCode').value; 
             const players = [1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
 
             if(!code || players.length===0){alert("Missing Data");return;}
 
+            const link = document.getElementById('finalLink').value||"https://www.techcrush.in";
+            
+            // Raw text for editing (Use * for bold as usual in WA)
+            const rawMsg = `🎮 *MATCH STARTED!* \n\n🔑 ID: *${code}* \n🔗 Link: ${link} \n\n🛑 *IMPORTANT:* Win hone par Ludo Chat me *${sec}* likhna JARURI hai.`;
+            
+            document.getElementById('previewText').value = rawMsg;
+            document.getElementById('previewModal').classList.remove('hidden');
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').classList.add('hidden');
+        }
+
+        // NEW: CONFIRM AND GENERATE
+        function confirmAndSend() {
+            closePreview();
+            
+            // Get edited text and Encode it
+            const rawText = document.getElementById('previewText').value;
+            const finalMsg = encodeURIComponent(rawText);
+
+            const code = document.getElementById('finalCode').value; 
+            const sec = document.getElementById('securityCode').value; 
+            const players = [1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
+
             // Save History (Unpaid)
             saveToHistory(code, sec, 0); 
             document.getElementById('securityCodeDisplay').innerText = sec;
-
-            const link = document.getElementById('finalLink').value||"https://www.techcrush.in";
-            // WhatsApp formatted message
-            const msg = encodeURIComponent(`🎮 *MATCH STARTED!* \n\n🔑 ID: *${code}* \n🔗 Link: ${link} \n\n🛑 *IMPORTANT:* Win hone par Ludo Chat me *${sec}* likhna JARURI hai.`);
 
             const con = document.getElementById('buttonsContainer'); 
             con.innerHTML = "";
             
             players.forEach((u,i)=>{
-                // Ensure number format (Add 91 if missing)
                 let cleanNum = u.replace(/\D/g,'');
                 if(cleanNum.length === 10) cleanNum = "91" + cleanNum;
 
                 const a = document.createElement('a'); 
-                a.className = "btn-wa"; // Green WA button class
+                a.className = "btn-wa"; 
                 a.innerHTML = `<div class="flex items-center gap-3">
                                 <span class="text-xs text-green-400">P${i+1}</span>
                                 <div class="flex flex-col">
@@ -262,7 +301,7 @@
                                </div>
                                <span class="text-xs bg-green-600 text-white px-3 py-1 rounded">WHATSAPP ➜</span>`;
                 
-                a.href = `https://wa.me/${cleanNum}?text=${msg}`; 
+                a.href = `https://wa.me/${cleanNum}?text=${finalMsg}`; 
                 a.target = "_blank";
                 a.onclick = function(){ this.className+=" done"; this.querySelector('span:last-child').innerText="✅"; };
                 con.appendChild(a);
@@ -276,7 +315,7 @@
 
         function closeDispatch() { document.getElementById('dispatchView').classList.add('hidden'); generateNewSecurityCode(); loadHistory(); }
 
-        // --- VERIFY & PAY (Logic remains same) ---
+        // --- VERIFY & PAY ---
         function autoFillVerify() {
             try {
                 const t=document.getElementById('claimRaw').value; if(!t)return;
@@ -290,14 +329,12 @@
         function verifyAndCheck() {
             const rid = document.getElementById('v_roomID').value;
             const sec = document.getElementById('v_code').value;
-            const upi = document.getElementById('v_upi').value;
             const resBox = document.getElementById('verifyResult');
             const stsBox = document.getElementById('statusBox');
             const stsTxt = document.getElementById('matchStatusText');
             const paySec = document.getElementById('paymentSection');
 
             resBox.classList.remove('hidden');
-            
             const hist = safeGetHistory();
             const match = hist.find(h => h.id == rid);
 
@@ -325,7 +362,6 @@
                 return;
             }
 
-            // Valid
             stsBox.className = "p-3 rounded-lg text-center mb-4 bg-green-900/20 border border-green-700";
             stsTxt.innerText = "✅ MATCH VERIFIED - PAY NOW";
             stsTxt.className = "text-sm font-bold text-green-500";
@@ -368,7 +404,7 @@
             document.getElementById('claimRaw').value=""; document.getElementById('verifyResult').classList.add('hidden');
         }
 
-        // --- HISTORY ---
+        // --- HISTORY & BACKUP ---
         function saveToHistory(id, code, paid) {
             const hist = safeGetHistory();
             hist.unshift({ time: new Date().getTime(), id: id, code: code, status: paid>0?'PAID':'PENDING', paid: paid });
@@ -403,6 +439,44 @@
         }
 
         function clearHistory() { if(confirm("Clear All History?")) { localStorage.setItem('tc_history_v2', "[]"); loadHistory(); } }
+
+        // NEW: BACKUP LOGIC
+        function downloadBackup() {
+            const data = localStorage.getItem('tc_history_v2') || "[]";
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const date = new Date().toISOString().slice(0,10);
+            a.href = url;
+            a.download = `TechCrush_Backup_${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function toggleRestore() {
+            document.getElementById('restoreArea').classList.toggle('hidden');
+        }
+
+        function processRestore() {
+            const raw = document.getElementById('restoreInput').value;
+            if(!raw) { alert("Please paste data first"); return; }
+            try {
+                const parsed = JSON.parse(raw);
+                if(Array.isArray(parsed)) {
+                    localStorage.setItem('tc_history_v2', JSON.stringify(parsed));
+                    loadHistory();
+                    document.getElementById('restoreInput').value = "";
+                    document.getElementById('restoreArea').classList.add('hidden');
+                    alert("History Restored Successfully!");
+                } else {
+                    alert("Invalid data format");
+                }
+            } catch(e) {
+                alert("Error: Invalid JSON");
+            }
+        }
     </script>
 </body>
 </html>
+
