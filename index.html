@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TechCrush v27 (Backup + Edit)</title>
+    <title>TechCrush v28 (Phones in History)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script>
@@ -60,7 +60,7 @@
     <div id="appContent" class="hidden">
 
         <div class="flex justify-between items-center mb-4">
-            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-green-500">WA-v27</span></h1>
+            <h1 class="text-lg font-bold text-white">TechCrush OS <span class="text-[10px] text-green-500">WA-v28</span></h1>
             <div class="text-[10px] bg-slate-800 px-2 py-1 rounded text-gray-400 font-mono" id="timeDisplay">--:--</div>
         </div>
 
@@ -71,7 +71,7 @@
 
         <div id="dispatchTab">
             <div class="bg-red-900/20 border border-red-800/50 p-3 rounded-xl mb-4 flex justify-between items-center">
-                <div><span class="text-[10px] text-red-400 font-bold uppercase block">Current Match Code</span></div>
+                <div><span class="text-[10px] text-red-400 font-bold uppercase block">Current Match Code (4-Digit)</span></div>
                 <div class="flex items-center gap-2">
                     <input type="text" id="securityCode" class="bg-red-900/40 text-red-300 font-mono text-xl font-bold w-16 text-center rounded border border-red-700/50 p-1" readonly>
                     <button onclick="generateNewSecurityCode()" class="text-xs bg-slate-800 p-2 rounded">🔄</button>
@@ -115,7 +115,7 @@
 
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div><label class="text-[9px] text-gray-500 uppercase block mb-1">1. Room ID</label><input type="text" id="v_roomID" class="input-box text-center font-bold text-yellow-400"></div>
-                    <div><label class="text-[9px] text-gray-500 uppercase block mb-1">2. Secret Code</label><input type="text" id="v_code" placeholder="Ex: A-5" class="input-box text-center font-bold text-red-400 uppercase"></div>
+                    <div><label class="text-[9px] text-gray-500 uppercase block mb-1">2. Secret Code (4-Digit)</label><input type="text" id="v_code" placeholder="Ex: 4592" class="input-box text-center font-bold text-red-400 uppercase"></div>
                 </div>
 
                 <div class="mb-4"><label class="text-[9px] text-gray-500 uppercase block mb-1">3. Winner UPI ID</label><input type="text" id="v_upi" class="input-box"></div>
@@ -158,7 +158,7 @@
                 </div>
 
                 <div class="flex justify-between px-2 text-[9px] text-gray-500 uppercase mb-2 border-b border-slate-800 pb-1">
-                    <span class="w-10">Time</span><span class="w-16">ID</span><span class="w-12 text-center text-green-600">Amt</span><span class="w-8 text-center">Code</span><span class="w-8 text-right">Sts</span>
+                    <span class="w-10">Time</span><span class="w-16">ID/Phone</span><span class="w-12 text-center text-green-600">Amt</span><span class="w-8 text-center">Code</span><span class="w-8 text-right">Sts</span>
                 </div>
                 <div id="historyList" class="history-container overflow-y-auto max-h-60"></div>
             </div>
@@ -219,7 +219,13 @@
         }
 
         // --- DISPATCHER ---
-        function generateNewSecurityCode() { const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; document.getElementById('securityCode').value=c.charAt(Math.floor(Math.random()*c.length))+"-"+c.charAt(Math.floor(Math.random()*c.length)); }
+        // CHANGED: 4-Digit Number Generator
+        function generateNewSecurityCode() { 
+            // Generates number between 1000 and 9999
+            const code = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById('securityCode').value = code; 
+        }
+
         function toggleMode() { const man=document.getElementById('manualMode').checked; document.getElementById('autoSection').classList.toggle('hidden', man); document.getElementById('manualSection').classList.toggle('hidden', !man); }
         function clearDispatchInput() { document.getElementById('ludoRaw').value=""; document.getElementById('manualID').value=""; document.getElementById('manualLink').value=""; document.getElementById('finalCode').value=""; document.getElementById('finalLink').value=""; }
 
@@ -246,7 +252,7 @@
             } catch(e) { console.log("Phone Error"); }
         }
 
-        // NEW: PREVIEW FUNCTION
+        // PREVIEW FUNCTION
         function preparePreview() {
             const code = document.getElementById('finalCode').value; 
             const sec = document.getElementById('securityCode').value; 
@@ -256,7 +262,7 @@
 
             const link = document.getElementById('finalLink').value||"https://www.techcrush.in";
             
-            // Raw text for editing (Use * for bold as usual in WA)
+            // Raw text for editing
             const rawMsg = `🎮 *MATCH STARTED!* \n\n🔑 ID: *${code}* \n🔗 Link: ${link} \n\n🛑 *IMPORTANT:* Win hone par Ludo Chat me *${sec}* likhna JARURI hai.`;
             
             document.getElementById('previewText').value = rawMsg;
@@ -267,7 +273,7 @@
             document.getElementById('previewModal').classList.add('hidden');
         }
 
-        // NEW: CONFIRM AND GENERATE
+        // CONFIRM AND GENERATE
         function confirmAndSend() {
             closePreview();
             
@@ -279,8 +285,8 @@
             const sec = document.getElementById('securityCode').value; 
             const players = [1,2,3,4,5].map(i=>document.getElementById('p'+i).value.trim()).filter(p=>p!=="");
 
-            // Save History (Unpaid)
-            saveToHistory(code, sec, 0); 
+            // Save History (Unpaid) - NOW INCLUDES PLAYER PHONES
+            saveToHistory(code, sec, 0, players); 
             document.getElementById('securityCodeDisplay').innerText = sec;
 
             const con = document.getElementById('buttonsContainer'); 
@@ -319,9 +325,13 @@
         function autoFillVerify() {
             try {
                 const t=document.getElementById('claimRaw').value; if(!t)return;
-                const id=t.match(/(\d{6,8})/); const cd=t.match(/([A-Z]-[0-9A-Z])/i); const up=t.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
+                const id=t.match(/(\d{6,8})/); 
+                // CHANGED: Regex to find 4 digit code (looking for exactly 4 digits not inside a larger number)
+                const cd=t.match(/\b\d{4}\b/); 
+                const up=t.match(/[a-zA-Z0-9.\-_]+@[a-zA-Z]+/);
+                
                 if(id)document.getElementById('v_roomID').value=id[0];
-                if(cd)document.getElementById('v_code').value=cd[0].toUpperCase();
+                if(cd)document.getElementById('v_code').value=cd[0];
                 if(up)document.getElementById('v_upi').value=up[0];
             } catch(e){ console.log("Autofill error"); }
         }
@@ -346,7 +356,8 @@
                 return;
             }
 
-            if (match.code !== sec) {
+            // Loose comparison (string vs number) is fine here
+            if (match.code != sec) {
                 stsBox.className = "p-3 rounded-lg text-center mb-4 bg-red-900/20 border border-red-700";
                 stsTxt.innerHTML = `⚠️ WRONG SECURITY CODE <br><span class='text-[10px]'>Correct: ${match.code}</span>`;
                 stsTxt.className = "text-sm font-bold text-red-500";
@@ -405,9 +416,17 @@
         }
 
         // --- HISTORY & BACKUP ---
-        function saveToHistory(id, code, paid) {
+        // CHANGED: Now accepts 'phones' array
+        function saveToHistory(id, code, paid, phones) {
             const hist = safeGetHistory();
-            hist.unshift({ time: new Date().getTime(), id: id, code: code, status: paid>0?'PAID':'PENDING', paid: paid });
+            hist.unshift({ 
+                time: new Date().getTime(), 
+                id: id, 
+                code: code, 
+                status: paid>0?'PAID':'PENDING', 
+                paid: paid,
+                phones: phones || [] // Save phone numbers
+            });
             if(hist.length > 50) hist.pop();
             localStorage.setItem('tc_history_v2', JSON.stringify(hist));
             loadHistory();
@@ -424,11 +443,19 @@
                 const d = new Date(h.time);
                 const timeStr = d.getHours() + ":" + String(d.getMinutes()).padStart(2,'0');
                 
+                // Format phones for display (comma separated)
+                const phoneStr = (h.phones && h.phones.length > 0) ? h.phones.join(', ') : '';
+
                 const row = document.createElement('div');
                 row.className = "flex justify-between px-2 py-2 border-b border-slate-800 items-center text-xs hover:bg-slate-800";
+                
+                // CHANGED: Added phone number display below the ID
                 row.innerHTML = `
                     <span class="w-10 text-gray-500 font-mono">${timeStr}</span>
-                    <span class="w-16 font-bold text-white">${h.id}</span>
+                    <div class="w-16 flex flex-col">
+                        <span class="font-bold text-white">${h.id}</span>
+                        <span class="text-[9px] text-gray-500 truncate">${phoneStr}</span>
+                    </div>
                     <span class="w-12 text-center text-green-400 font-mono">${h.paid > 0 ? '₹'+h.paid : '-'}</span>
                     <span class="w-8 text-center text-fuchsia-400 font-mono">${h.code}</span>
                     <span class="w-8 text-right font-bold ${h.status==='PAID'?'text-green-500':'text-yellow-500'}">${h.status==='PAID'?'✔':'⏳'}</span>
@@ -440,7 +467,7 @@
 
         function clearHistory() { if(confirm("Clear All History?")) { localStorage.setItem('tc_history_v2', "[]"); loadHistory(); } }
 
-        // NEW: BACKUP LOGIC
+        // BACKUP LOGIC (No changes needed, will automatically include new phone data)
         function downloadBackup() {
             const data = localStorage.getItem('tc_history_v2') || "[]";
             const blob = new Blob([data], {type: 'application/json'});
@@ -479,4 +506,3 @@
     </script>
 </body>
 </html>
-
